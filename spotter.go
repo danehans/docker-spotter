@@ -170,7 +170,7 @@ func watch(r io.Reader) {
 		}
 		events := hm[event.ID]
 		if events == nil {
-			events = hm[strings.TrimLeft(container.Name, "/")]
+			events = GetEvents(hm, container.Name)
 			if events == nil {
 				continue
 			}
@@ -204,4 +204,17 @@ func watch(r io.Reader) {
 			}
 		}
 	}
+}
+
+//Get events map from hooks by partial name match
+func GetEvents(hooks hookMap, name string) map[string][][]*template.Template {
+	name = strings.TrimLeft(name, "/")
+
+	for key,value := range hooks {
+		if (strings.HasPrefix(name, key)) {
+			return value
+		}
+	}
+
+	return nil
 }
