@@ -213,35 +213,18 @@ func watch(r io.Reader) {
 
 
 func GetEvents(hooks hookMap, container *Container) map[string][][]*template.Template {
-	result := GetEventsByName(hooks, container.Name)
-
-	if (result == nil) {
-		result = GetEventsByEnv(hooks, container.Config.Env)
-	}
-
-	return result
-}
-
-//Get events map from hooks by partial name match
-func GetEventsByName(hooks hookMap, name string) map[string][][]*template.Template {
-	name = strings.TrimLeft(name, "/")
+	name := strings.TrimLeft(container.Name, "/")
 
 	for key, value := range hooks {
-		if (strings.HasPrefix(name, key)) {
+		//if key is key/value pair search it in Env
+		if (strings.Contains(key, "=") && contains(container.Config.Env, key)) {
+			return value
+		//looks like key is container's name
+		} else if strings.HasPrefix(name, key) {
 			return value
 		}
 	}
 
-	return nil
-}
-
-//Get events map from hooks by env key/value pair match
-func GetEventsByEnv(hooks hookMap, env []string) map[string][][]*template.Template {
-	for key, value := range hooks {
-		if (contains(env, key)) {
-			return value
-		}
-	}
 	return nil
 }
 
