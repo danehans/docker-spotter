@@ -30,10 +30,15 @@ var (
 	hm     hookMap
 )
 
+type ContainerConfig struct {
+	Env []string
+}
+
 type Container struct {
-	Name  string
-	ID    string
-	Event utils.JSONMessage
+	Name   string
+	ID     string
+	Config ContainerConfig
+	Event  utils.JSONMessage
 }
 
 // id, event, command
@@ -170,7 +175,7 @@ func watch(r io.Reader) {
 		}
 		events := hm[event.ID]
 		if events == nil {
-			events = GetEvents(hm, container.Name)
+			events = GetEvents(hm, container)
 			if events == nil {
 				continue
 			}
@@ -206,11 +211,22 @@ func watch(r io.Reader) {
 	}
 }
 
+
+func GetEvents(hooks hookMap, container *Container) map[string][][]*template.Template {
+	result := GetEventsByName(hooks, container.Name)
+
+	if (result == nil) {
+		result = GetEventsByEnv(hooks, container.Config.Env)
+	}
+
+	return result
+}
+
 //Get events map from hooks by partial name match
-func GetEvents(hooks hookMap, name string) map[string][][]*template.Template {
+func GetEventsByName(hooks hookMap, name string) map[string][][]*template.Template {
 	name = strings.TrimLeft(name, "/")
 
-	for key,value := range hooks {
+	for key, value := range hooks {
 		if (strings.HasPrefix(name, key)) {
 			return value
 		}
@@ -218,3 +234,25 @@ func GetEvents(hooks hookMap, name string) map[string][][]*template.Template {
 
 	return nil
 }
+
+//Get events map from hooks by env key/value pair match
+func GetEventsByEnv(hooks hookMap, env []string) map[string][][]*template.Template {
+	for key, value := range hooks {
+		if (contains(env, key)) {
+			return value
+		}
+	}
+	return nil
+}
+
+//Check if source array contains target string
+func contains(source []string, target string) bool {
+	for _, value := range source {
+		if (value == target) {
+			return true
+		}
+	}
+
+	return false
+}
+
